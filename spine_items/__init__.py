@@ -17,3 +17,5 @@ Spine items.
 """
 
 from .version import __version__
+
+__test__ = "test"
