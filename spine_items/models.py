@@ -25,22 +25,6 @@ from PySide2.QtWidgets import QFileIconProvider
 from PySide2.QtGui import QStandardItemModel, QStandardItem, QPixmap, QPainter, QIcon
 
 
-def _file_label(resource):
-    """Picks a label for given file resource."""
-    if resource.type_ == "file":
-        return resource.path
-    if resource.type_ == "database":
-        return resource.url
-    if resource.type_ in ("transient_file", "file_pattern"):
-        label = resource.metadata.get("label")
-        if label is None:
-            if resource.url is None:
-                raise RuntimeError("ProjectItemResource is missing a url and metadata 'label'.")
-            return resource.path
-        return label
-    raise RuntimeError(f"Unknown resource type '{resource.type_}'")
-
-
 class FileListItem:
     """An item for FileListModel.
 
@@ -72,18 +56,8 @@ class FileListItem:
         Raises:
             RuntimeError: If given resource has an unknown type
         """
-        is_pattern = False
-        if resource.type_ == "file":
-            label = resource.path
-        elif resource.type_ == "database":
-            label = resource.url
-        elif resource.type_ == "transient_file":
-            label = _file_label(resource)
-        elif resource.type_ == "file_pattern":
-            label = _file_label(resource)
-            is_pattern = True
-        else:
-            raise RuntimeError(f"Unknown resource type '{resource.type_}'")
+        label = resource.label
+        is_pattern = resource.type_ == "file_pattern"
         return cls(label, resource.path if resource.url else "", resource.provider.name, is_pattern)
 
     def exists(self):
@@ -143,13 +117,9 @@ class FileListModel(QAbstractListModel):
         return None
 
     def flags(self, index):
-        """Returns item's flags."""
         if not index.isValid():
             return Qt.NoItemFlags
-        item = self._files[index.row()]
-        if item.exists():
-            return Qt.ItemIsSelectable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled | Qt.ItemNeverHasChildren
-        return Qt.ItemNeverHasChildren
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsUserCheckable
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         """Returns header information."""
@@ -182,8 +152,7 @@ class FileListModel(QAbstractListModel):
         for resource in resources:
             if resource.type_ in self._invalid_resource_types:
                 continue
-            label = _file_label(resource)
-            item = items.get(label)
+            item = items.get(resource.label)
             if item is not None:
                 item.update(resource)
                 updated.append(item)
@@ -238,8 +207,8 @@ class InputFileListModel(FileListModel):
 
     def flags(self, index):
         flags = super().flags(index) | Qt.ItemIsDragEnabled
-        if not self._checkable:
-            flags &= ~Qt.ItemIsUserCheckable
+        if self._checkable:
+            flags |= Qt.ItemIsUserCheckable
         return flags
 
     def data(self, index, role=Qt.DisplayRole):

@@ -36,7 +36,9 @@ from .utils import (
     find_last_output_files,
     flatten_file_path_duplicates,
     is_pattern,
+    make_label,
 )
+from ..utils import labelled_resource_args
 
 
 class ExecutableItem(ExecutableItemBase):
@@ -59,6 +61,7 @@ class ExecutableItem(ExecutableItemBase):
         self._tool_specification = tool_specification
         self._cmd_line_args = cmd_line_args
         self._tool_instance = None
+        self._resources_from_downstream = []
 
     @staticmethod
     def item_type():
@@ -310,6 +313,11 @@ class ExecutableItem(ExecutableItemBase):
                 return False
         return True
 
+    def _execute_backward(self, resources):
+        """See base class."""
+        self._resources_from_downstream = resources.copy()
+        return True
+
     def _execute_forward(self, resources):
         """
         Executes the Tool according to the Tool specification.
@@ -394,6 +402,12 @@ class ExecutableItem(ExecutableItemBase):
             self._logger.msg_error.emit("Creating output subdirectories failed. Tool execution aborted.")
             return False
         self._tool_instance = self._tool_specification.create_tool_instance(execution_dir, self._logger)
+        # Expand cmd_line_args from resources
+        labelled_args = labelled_resource_args(resources + self._resources_from_downstream)
+        for k, label in enumerate(self._cmd_line_args):
+            arg = labelled_args.get(label)
+            if arg is not None:
+                self._cmd_line_args[k] = arg
         try:
             self._tool_instance.prepare(self._cmd_line_args)
         except RuntimeError as error:
@@ -561,7 +575,7 @@ class ExecutableItem(ExecutableItemBase):
             latest_files = last_output_files.get(out_file_label, list())
             for out_file in latest_files:
                 file_url = pathlib.Path(out_file.path).as_uri()
-                metadata = {"label": out_file.label}
+                metadata = {"label": make_label(out_file.label)}
                 resource = ProjectItemResource(self, "transient_file", url=file_url, metadata=metadata)
                 resources.append(resource)
         return resources

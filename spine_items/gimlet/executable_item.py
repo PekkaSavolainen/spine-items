@@ -25,10 +25,11 @@ from spinetoolbox.execution_managers import QProcessExecutionManager
 from spine_engine.project_item.executable_item_base import ExecutableItemBase
 from spine_engine.utils.helpers import shorten
 from spine_engine.utils.serialization import deserialize_checked_states, deserialize_path
-from spine_engine.utils.command_line_arguments import split_cmdline_args, expand_tags
+from spine_engine.utils.command_line_arguments import split_cmdline_args
 from spine_engine.config import GIMLET_WORK_DIR_NAME
 from .item_info import ItemInfo
 from .utils import SHELLS
+from ..utils import labelled_resource_filepaths, labelled_resource_args
 
 
 class ExecutableItem(ExecutableItemBase, QObject):
@@ -57,6 +58,7 @@ class ExecutableItem(ExecutableItemBase, QObject):
         self._resources = list()  # Predecessor resources
         self._successor_resources = list()
         self._selected_files = selected_files
+        self._resources_from_downstream = []
 
     @staticmethod
     def item_type():
@@ -101,6 +103,11 @@ class ExecutableItem(ExecutableItemBase, QObject):
             self._gimlet_process.stop_execution()
             self._gimlet_process = None
 
+    def _execute_backward(self, resources):
+        """See base class."""
+        self._resources_from_downstream = resources.copy()
+        return True
+
     def _execute_forward(self, resources):
         """See base class.
 
@@ -126,8 +133,13 @@ class ExecutableItem(ExecutableItemBase, QObject):
         if sys.platform != "win32" and (self.shell_name == "cmd.exe" or self.shell_name == "powershell.exe"):
             self._logger.msg_warning.emit(f"Sorry, selected shell is not supported on your platform [{sys.platform}]")
             return False
-        # Expand tags in command list
         cmd_list = self.cmd_list.copy()
+        # Expand cmd_list from resources
+        labelled_args = labelled_resource_args(resources + self._resources_from_downstream)
+        for k, label in enumerate(cmd_list):
+            arg = labelled_args.get(label)
+            if arg is not None:
+                cmd_list[k] = arg
         if not self.shell_name:
             prgm = cmd_list.pop(0)
             self._gimlet_process = QProcessExecutionManager(self._logger, prgm, cmd_list)
@@ -144,7 +156,13 @@ class ExecutableItem(ExecutableItemBase, QObject):
                 return False
             self._gimlet_process = QProcessExecutionManager(self._logger, shell_prgm, cmd_list)
         # Copy selected files to work_dir
-        if not self._copy_files(self._selected_files, self._work_dir):
+        selected_files = self._selected_files.copy()
+        labelled_filepaths = labelled_resource_filepaths(resources + self._resources_from_downstream)
+        for k, label in enumerate(selected_files):
+            filepath = labelled_filepaths.get(label)
+            if filepath is not None:
+                selected_files[k] = filepath
+        if not self._copy_files(selected_files, self._work_dir):
             return False
         # Make work directory anchor with path as tooltip
         work_anchor = (
@@ -168,8 +186,7 @@ class ExecutableItem(ExecutableItemBase, QObject):
         if not self._gimlet_execution_succeeded:
             self._logger.msg_error.emit(f"{self.name} execution failed")
             return False
-        else:
-            self._logger.msg_success.emit(f"Executing {self.name} finished")
+        self._logger.msg_success.emit(f"Executing {self.name} finished")
         return True
 
     def _execute_backward(self, resources):
@@ -238,61 +255,3 @@ class ExecutableItem(ExecutableItemBase, QObject):
         else:
             self._logger.msg.emit(f"\tCopied <b>{n_copied_files}</b> file(s)")
         return True
-
-    def _expand_gimlet_tags(self, cmd, resources):
-        """Returns Gimlet's command as list with special tags expanded.
-
-        Tags that will be replaced:
-
-        - @@optional_inputs@@ expands to a space-separated list of Gimlet's optional input files
-        - @@url:<Data Store name>@@ expands to the URL provided by a named data store
-        - @@url_inputs@@ expands to a space-separated list of Gimlet's input database URLs
-        - @@url_outputs@@ expands to a space-separated list of Gimlet's output database URLs
-
-        Args:
-            cmd (list): Command that may include tags that should be expanded
-            resources (list): List of resources from direct predecessor items
-
-        Returns:
-            list: Expanded command
-        """
-        files = _file_paths_from_resources(resources)
-        input_urls = _database_urls_from_resources(resources)
-        output_urls = _database_urls_from_resources(self._successor_resources)
-        tags_expanded, args = expand_tags(cmd, files, input_urls, output_urls)
-        while tags_expanded:
-            # Keep expanding until there is no tag left to expand.
-            tags_expanded, args = expand_tags(args, files, input_urls, output_urls)
-        return args
-
-
-def _file_paths_from_resources(resources):
-    """Pries file paths from resources.
-
-    Args:
-        resources (list): a list of ProjectItemResource objects
-
-    Returns:
-        list: List of file paths.
-    """
-    files = list()
-    for resource in resources:
-        if resource.type_ == "file":
-            files.append(resource.path)
-    return files
-
-
-def _database_urls_from_resources(resources):
-    """Pries database URLs and their providers' names from resources.
-
-    Args:
-        resources (list): a list of ProjectItemResource objects
-
-    Returns:
-        dict: a mapping from resource provider's name to a database URL.
-    """
-    urls = dict()
-    for resource in resources:
-        if resource.type_ == "database":
-            urls[resource.provider.name] = resource.url
-    return urls

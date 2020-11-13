@@ -30,6 +30,7 @@ from spine_engine.utils.serialization import deserialize_checked_states
 from spine_engine.utils.returning_process import ReturningProcess
 from .item_info import ItemInfo
 from .do_work import do_work
+from ..utils import labelled_resource_filepaths
 
 
 class ExecutableItem(ExecutableItemBase):
@@ -74,12 +75,12 @@ class ExecutableItem(ExecutableItemBase):
         """See base class."""
         if not self._mapping:
             return True
-        absolute_paths = _files_from_resources(resources)
-        checked_files = list()
+        labelled_filepaths = labelled_resource_filepaths(resources)
+        source_filepaths = list()
         for label in self._selected_files:
-            absolute_path = absolute_paths.get(label)
-            if absolute_path is not None:
-                checked_files.append(absolute_path)
+            filepath = labelled_filepaths.get(label)
+            if filepath is not None:
+                source_filepaths.append(filepath)
         urls_downstream = [r.url for r in self._resources_from_downstream if r.type_ == "database"]
         source_type = self._mapping["source_type"]
         if source_type == "GdxConnector":
@@ -98,7 +99,7 @@ class ExecutableItem(ExecutableItemBase):
                 self._mapping,
                 self._cancel_on_error,
                 self._logs_dir,
-                checked_files,
+                source_filepaths,
                 connector,
                 urls_downstream,
                 self._logger,
@@ -135,14 +136,3 @@ class ExecutableItem(ExecutableItemBase):
         gams_path = app_settings.value("appSettings/gamsPath", defaultValue=None)
         cancel_on_error = item_dict["cancel_on_error"]
         return cls(name, mapping, selected_files, logs_dir, gams_path, cancel_on_error, logger)
-
-
-def _files_from_resources(resources):
-    """Returns a list of files available in given resources."""
-    files = dict()
-    for resource in resources:
-        if resource.type_ == "file":
-            files[resource.path] = resource.path
-        elif resource.type_ == "transient_file":
-            files[resource.metadata["label"]] = resource.path
-    return files

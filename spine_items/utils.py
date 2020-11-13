@@ -8,6 +8,21 @@
 # Public License for more details. You should have received a copy of the GNU Lesser General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 ######################################################################################################################
-__version__ = "0.1.39"
-REQUIRED_SPINE_TOOLBOX_VERSION = "0.5.7"
-REQUIRED_SPINE_ENGINE_VERSION = "0.8.4"
+
+"""
+Contains utilities for all items.
+
+:authors: A. Soininen (VTT)
+:date:   1.4.2020
+"""
+
+
+def labelled_resource_filepaths(resources):
+    """Returns a dice mapping resource labels to filepaths available in given resources.
+    The label acts as an identifier for a 'transient_file'.
+    """
+    return {resource.label: resource.path for resource in resources if resource.hasfilepath}
+
+
+def labelled_resource_args(resources):
+    return {resource.label: resource.arg for resource in resources}

@@ -30,7 +30,7 @@ from ..commands import UpdateCmdLineArgsCommand
 from .item_info import ItemInfo
 from .widgets.custom_menus import ToolContextMenu, ToolSpecificationMenu
 from .executable_item import ExecutableItem
-from .utils import flatten_file_path_duplicates, find_file, find_last_output_files, is_pattern
+from .utils import flatten_file_path_duplicates, find_file, find_last_output_files, is_pattern, make_label
 from ..models import ToolCommandLineArgsModel, InputFileListModel
 
 
@@ -311,24 +311,24 @@ class Tool(ProjectItem):
             latest_files = last_output_files.get(out_file_label, list())
             if is_pattern(out_file_label):
                 if not latest_files:
-                    metadata = {"label": out_file_label}
+                    metadata = {"label": make_label(out_file_label)}
                     resource = ProjectItemResource(self, "file_pattern", metadata=metadata)
                     resources.append(resource)
                 else:
                     for out_file in latest_files:
                         file_url = pathlib.Path(out_file.path).as_uri()
-                        metadata = {"label": out_file.label}
+                        metadata = {"label": make_label(out_file.label)}
                         resource = ProjectItemResource(self, "transient_file", url=file_url, metadata=metadata)
                         resources.append(resource)
             else:
                 if not latest_files:
-                    metadata = {"label": out_file_label}
+                    metadata = {"label": make_label(out_file_label)}
                     resource = ProjectItemResource(self, "transient_file", metadata=metadata)
                     resources.append(resource)
                 else:
                     latest_file = latest_files[0]  # Not a pattern; there should be only one element in the list.
                     file_url = pathlib.Path(latest_file.path).as_uri()
-                    metadata = {"label": latest_file.label}
+                    metadata = {"label": make_label(latest_file.label)}
                     resource = ProjectItemResource(self, "transient_file", url=file_url, metadata=metadata)
                     resources.append(resource)
         return resources
