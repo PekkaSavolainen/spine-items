@@ -413,6 +413,7 @@ class DataStore(ProjectItem):
             bool: True if renaming succeeded, False otherwise
         """
         old_data_dir = os.path.abspath(self.data_dir)  # Old data_dir before rename
+        old_name = self.name
         if not super().rename(new_name):
             return False
         # If dialect is sqlite and db line edit refers to a file in the old data_dir, db line edit needs updating
@@ -422,6 +423,10 @@ class DataStore(ProjectItem):
                 database = os.path.join(self.data_dir, db_filename)  # NOTE: data_dir has been updated at this point
                 # Check that the db was moved successfully to the new data_dir
                 if os.path.exists(database):
+                    self._url.update(database=database)
+                    self.load_url_into_selections(self._url)
+        self._additional_resource_metadata = {"updated_from": make_label(old_name)}
+        self.item_changed.emit()
         return True
 
     def notify_destination(self, source_item):
