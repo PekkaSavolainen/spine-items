@@ -262,6 +262,7 @@ class Importer(ProjectItem):
             label, selected = self._file_model.checked_data(self._file_model.index(row, 0))
             selections.append([label, selected])
         d["file_selection"] = selections
+        d = self.compare_and_replace("file_selection", d)
         return d
 
     @staticmethod
