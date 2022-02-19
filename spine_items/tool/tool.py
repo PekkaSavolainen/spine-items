@@ -39,9 +39,6 @@ class Tool(ProjectItem):
 
     jupyter_console_requested = Signal(str, str, str)
     persistent_console_requested = Signal(str, tuple, str)
-    persistent_stdin_available = Signal(str, str)
-    persistent_stdout_available = Signal(str, str)
-    persistent_stderr_available = Signal(str, str)
 
     def __init__(
         self,
@@ -94,11 +91,8 @@ class Tool(ProjectItem):
         self._options = options if options is not None else {}
         self._resources_from_upstream = list()
         self._resources_from_downstream = list()
-        self.jupyter_console_requested.connect(self._setup_jupyter_console)
-        self.persistent_console_requested.connect(self._setup_persistent_console)
-        self.persistent_stdin_available.connect(self._add_persistent_stdin)
-        self.persistent_stdout_available.connect(self._add_persistent_stdout)
-        self.persistent_stderr_available.connect(self._add_persistent_stderr)
+        self.jupyter_console_requested.connect(self._setup_jupyter_console, Qt.BlockingQueuedConnection)
+        self.persistent_console_requested.connect(self._setup_persistent_console, Qt.BlockingQueuedConnection)
 
     def set_up(self):
         execute_in_work = self.execute_in_work
@@ -594,16 +588,13 @@ class Tool(ProjectItem):
             self._filter_consoles[filter_id] = self._toolbox.make_persistent_console(self, key, language)
             self._toolbox.ui.listView_console_executions.model().layoutChanged.emit()
 
-    @Slot(str, str)
-    def _add_persistent_stdin(self, filter_id, data):
+    def add_persistent_stdin(self, filter_id, data):
         self._get_console(filter_id).add_stdin(data)
 
-    @Slot(str, str)
-    def _add_persistent_stdout(self, filter_id, data):
+    def add_persistent_stdout(self, filter_id, data):
         self._get_console(filter_id).add_stdout(data)
 
-    @Slot(str, str)
-    def _add_persistent_stderr(self, filter_id, data):
+    def add_persistent_stderr(self, filter_id, data):
         self._get_console(filter_id).add_stderr(data)
 
     def _get_console(self, filter_id):
