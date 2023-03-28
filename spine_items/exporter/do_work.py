@@ -15,6 +15,7 @@ Exporter's execute kernel (do_work), as target for a multiprocess.Process
 :authors: A. Soininen (VTT)
 :date:    14.12.2020
 """
+import cProfile
 import os
 from datetime import datetime
 from pathlib import Path
@@ -66,41 +67,47 @@ def do_work(
     specification = Specification.from_dict(specification)
     successes = list()
     written_files = dict()
-    for url, output_label in databases.items():
-        try:
-            database_map = DatabaseMapping(url)
-        except SpineDBAPIError as error:
-            sanitized_url, _ = split_url_credentials(url)
-            logger.msg_error.emit(f"Failed to export <b>{sanitized_url}</b>: {error}")
-            if cancel_on_error:
-                return False, written_files
-            successes.append(False)
-            continue
-        try:
-            out_url = out_urls.get(url)
-            if specification.output_format == OutputFormat.SQL and out_url is not None:
-                successful = _export_to_database(
-                    database_map, specification, out_url, successes, cancel_on_error, logger
-                )
-            else:
-                successful = _export_to_file(
-                    database_map,
-                    specification,
-                    output_label,
-                    output_time_stamps,
-                    successes,
-                    written_files,
-                    cancel_on_error,
-                    gams_path,
-                    out_dir,
-                    filter_id,
-                    filter_subdirectory,
-                    logger,
-                )
-            if not successful:
-                return False, written_files
-        finally:
-            database_map.connection.close()
+    profiler = cProfile.Profile()
+    profiler.enable()
+    try:
+        for url, output_label in databases.items():
+            try:
+                database_map = DatabaseMapping(url)
+            except SpineDBAPIError as error:
+                sanitized_url, _ = split_url_credentials(url)
+                logger.msg_error.emit(f"Failed to export <b>{sanitized_url}</b>: {error}")
+                if cancel_on_error:
+                    return False, written_files
+                successes.append(False)
+                continue
+            try:
+                out_url = out_urls.get(url)
+                if specification.output_format == OutputFormat.SQL and out_url is not None:
+                    successful = _export_to_database(
+                        database_map, specification, out_url, successes, cancel_on_error, logger
+                    )
+                else:
+                    successful = _export_to_file(
+                        database_map,
+                        specification,
+                        output_label,
+                        output_time_stamps,
+                        successes,
+                        written_files,
+                        cancel_on_error,
+                        gams_path,
+                        out_dir,
+                        filter_id,
+                        filter_subdirectory,
+                        logger,
+                    )
+                if not successful:
+                    return False, written_files
+            finally:
+                database_map.connection.close()
+    finally:
+        profiler.disable()
+        profiler.dump_stats(os.path.join(out_dir, "run.pstats"))
     return all(successes), written_files
 
 
