@@ -21,10 +21,10 @@ from PySide6.QtCore import Slot, Qt, QFileInfo, QModelIndex, QItemSelection, QTi
 from PySide6.QtGui import QStandardItem, QStandardItemModel, QBrush
 from PySide6.QtWidgets import QFileDialog, QGraphicsItem, QFileIconProvider, QInputDialog, QMessageBox
 from spine_engine.utils.serialization import deserialize_path, serialize_path
+from spine_engine.project.project import INVALID_CHARS
 from spinetoolbox.project_item.project_item import ProjectItem
 from spinetoolbox.widgets.custom_qwidgets import ToolBarWidget
 from spinetoolbox.helpers import open_url, same_path
-from spinetoolbox.config import INVALID_FILENAME_CHARS
 from .commands import AddDCReferencesCommand, RemoveDCReferencesCommand, MoveReferenceToData
 from .custom_file_system_watcher import CustomFileSystemWatcher
 from .executable_item import ExecutableItem
@@ -539,7 +539,7 @@ class DataConnection(ProjectItem):
         if not file_name.strip():
             return
         # Check that file name has no invalid chars
-        if any(True for x in file_name if x in INVALID_FILENAME_CHARS):
+        if any(True for x in file_name if x in INVALID_CHARS):
             msg = f"File name <b>{file_name}</b> contains invalid characters."
             self._logger.information_box.emit("Creating file failed", msg)
             return

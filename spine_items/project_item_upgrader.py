@@ -8,31 +8,23 @@
 # Public License for more details. You should have received a copy of the GNU Lesser General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 ######################################################################################################################
-"""Standard project item package for Spine Toolbox."""
-from .version import __version__
+"""This module contains functions to upgrade project items in outdated project dictionary."""
+from spine_engine.project.exception import ItemsVersionTooHigh
+
+LATEST_PROJECT_DICT_ITEMS_VERSION = 1
 
 
-def _project_item_classes():
-    """Returns project item classes in this package.
+def upgrade_items_to_latest(items_dict, old_version):
+    """Upgrades the project items in given project dictionary to the latest version.
+
+    Args:
+        items_dict (dict): mapping from item name to item dict
+        old_version (int): items dict version
 
     Returns:
-        dict: mapping from item type to project item class
+        dict: latest version of the items dictionary
     """
-    from .data_connection.project_item import DataConnection
-    from .data_store.project_item import DataStore
-    from .tool.project_item import Tool
-    from .view.project_item import View
-
-    classes = {}
-    for item_class in (DataConnection, DataStore, Tool, View):
-        classes[item_class.item_type()] = item_class
-    return classes
-
-
-PROJECT_ITEM_CLASSES = _project_item_classes()
-from .project_item_upgrader import (
-    LATEST_PROJECT_DICT_ITEMS_VERSION,
-    upgrade_items_to_latest,
-)
-
-from .deserialization import specification_from_dict
+    if old_version == LATEST_PROJECT_DICT_ITEMS_VERSION:
+        return items_dict
+    if old_version > LATEST_PROJECT_DICT_ITEMS_VERSION:
+        raise ItemsVersionTooHigh()

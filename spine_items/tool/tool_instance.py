@@ -154,7 +154,7 @@ class JuliaToolInstance(ToolInstance):
 
     def prepare(self, args):
         """See base class."""
-        sysimage = self._owner.options.get("julia_sysimage", "")
+        sysimage = self._owner._options.get("julia_sysimage", "")
         use_julia_kernel = self._settings.value("appSettings/useJuliaKernel", defaultValue="2")
         # Prepare args
         mod_work_dir = escape_backward_slashes(self.basedir)

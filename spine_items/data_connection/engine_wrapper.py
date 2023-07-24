@@ -8,31 +8,22 @@
 # Public License for more details. You should have received a copy of the GNU Lesser General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 ######################################################################################################################
-"""Standard project item package for Spine Toolbox."""
-from .version import __version__
+"""This module contains Data Connection's Spine-Engine item as well as support utilities."""
+from functools import cached_property
+from spine_engine.project.project_item_wrapper import ProjectItemWrapper
+from .output_resources import file_paths_to_resources, urls_to_resources
 
 
-def _project_item_classes():
-    """Returns project item classes in this package.
+class DataConnectionWrapper(ProjectItemWrapper):
+    """Spine Engine wrapper over Data Connection item."""
 
-    Returns:
-        dict: mapping from item type to project item class
-    """
-    from .data_connection.project_item import DataConnection
-    from .data_store.project_item import DataStore
-    from .tool.project_item import Tool
-    from .view.project_item import View
+    @cached_property
+    def _file_paths(self):
+        """Data files and file references."""
+        return self._item.all_file_paths()
 
-    classes = {}
-    for item_class in (DataConnection, DataStore, Tool, View):
-        classes[item_class.item_type()] = item_class
-    return classes
-
-
-PROJECT_ITEM_CLASSES = _project_item_classes()
-from .project_item_upgrader import (
-    LATEST_PROJECT_DICT_ITEMS_VERSION,
-    upgrade_items_to_latest,
-)
-
-from .deserialization import specification_from_dict
+    def _output_resources_forward(self):
+        """See base class."""
+        file_resources = file_paths_to_resources(self._name, )
+        url_resources = urls_to_resources()
+        return file_resources + url_resources

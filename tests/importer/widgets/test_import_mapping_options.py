@@ -47,14 +47,14 @@ class TestImportMappingOptions(unittest.TestCase):
             self.assertEqual(ui.time_series_repeat_check_box.checkState(), Qt.CheckState.Unchecked)
             table_index = mappings_model.index(1, 0)
             flattened_mappings = mappings_model.index(0, 0, table_index).data(Role.FLATTENED_MAPPINGS)
-            self.assertEqual(flattened_mappings.value_mapping().options.get("repeat", False), False)
+            self.assertEqual(flattened_mappings.value_mapping()._options.get("repeat", False), False)
             with signal_waiter(ui.time_series_repeat_check_box.stateChanged) as waiter:
                 ui.time_series_repeat_check_box.setChecked(True)
                 waiter.wait()
             self.assertEqual(ui.time_series_repeat_check_box.checkState(), Qt.CheckState.Checked)
             table_index = mappings_model.index(1, 0)
             flattened_mappings = mappings_model.index(0, 0, table_index).data(Role.FLATTENED_MAPPINGS)
-            self.assertEqual(flattened_mappings.value_mapping().options["repeat"], True)
+            self.assertEqual(flattened_mappings.value_mapping()._options["repeat"], True)
 
     @staticmethod
     def _template_mapping():

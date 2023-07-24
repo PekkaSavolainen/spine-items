@@ -8,31 +8,15 @@
 # Public License for more details. You should have received a copy of the GNU Lesser General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 ######################################################################################################################
-"""Standard project item package for Spine Toolbox."""
-from .version import __version__
+"""This module contains Data Store's project item."""
+
+from spine_engine.project.project_item import ProjectItem
 
 
-def _project_item_classes():
-    """Returns project item classes in this package.
+class DataStore(ProjectItem):
+    """A Data Store project item."""
 
-    Returns:
-        dict: mapping from item type to project item class
-    """
-    from .data_connection.project_item import DataConnection
-    from .data_store.project_item import DataStore
-    from .tool.project_item import Tool
-    from .view.project_item import View
-
-    classes = {}
-    for item_class in (DataConnection, DataStore, Tool, View):
-        classes[item_class.item_type()] = item_class
-    return classes
-
-
-PROJECT_ITEM_CLASSES = _project_item_classes()
-from .project_item_upgrader import (
-    LATEST_PROJECT_DICT_ITEMS_VERSION,
-    upgrade_items_to_latest,
-)
-
-from .deserialization import specification_from_dict
+    @staticmethod
+    def item_type():
+        """See base class."""
+        return "Data Store"
