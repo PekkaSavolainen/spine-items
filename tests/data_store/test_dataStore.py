@@ -1,5 +1,6 @@
 ######################################################################################################################
 # Copyright (C) 2017-2022 Spine project consortium
+# Copyright Spine Items contributors
 # This file is part of Spine Items.
 # Spine Items is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General
 # Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option)
@@ -9,10 +10,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 ######################################################################################################################
 
-"""
-Unit tests for DataStore class.
-
-"""
+"""Unit tests for DataStore class."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -36,10 +34,6 @@ class TestDataStore(unittest.TestCase):
     def test_item_type(self):
         """Tests that the item type is correct."""
         self.assertEqual(DataStore.item_type(), ItemInfo.item_type())
-
-    def test_item_category(self):
-        """Tests that the item category is correct."""
-        self.assertEqual(DataStore.item_category(), ItemInfo.item_category())
 
 
 # noinspection PyUnusedLocal
@@ -68,6 +62,7 @@ class TestDataStoreWithMockToolbox(unittest.TestCase):
         self.toolbox.project.return_value = self.project
         with mock.patch("spine_items.data_store.data_store.QMenu"):
             self.ds = factory.make_item("DS", item_dict, self.toolbox, self.project)
+        self.project.get_item.return_value = self.ds
         self._properties_widget = mock_finish_project_item_construction(factory, self.ds, self.toolbox)
         self.ds_properties_ui = self.ds._properties_ui
 
@@ -252,7 +247,7 @@ class TestDataStoreWithMockToolbox(unittest.TestCase):
         self.ds_properties_ui.pushButton_ds_open_editor.click()
         sa_url = convert_to_sqlalchemy_url(self.ds.url(), "DS", logger=None)
         self.assertIsNotNone(sa_url)
-        self.toolbox.db_mngr.open_db_editor.assert_called_with({sa_url: 'DS'})
+        self.toolbox.db_mngr.open_db_editor.assert_called_with({sa_url: "DS"}, True)
 
     def test_open_db_editor2(self):
         """Test that selecting the 'sqlite' dialect, typing the path to an existing db file,
@@ -270,7 +265,7 @@ class TestDataStoreWithMockToolbox(unittest.TestCase):
         self.ds_properties_ui.pushButton_ds_open_editor.click()
         sa_url = convert_to_sqlalchemy_url(self.ds.url(), "DS", logger=None)
         self.assertIsNotNone(sa_url)
-        self.toolbox.db_mngr.open_db_editor.assert_called_with({sa_url: 'DS'})
+        self.toolbox.db_mngr.open_db_editor.assert_called_with({sa_url: "DS"}, True)
 
     def test_notify_destination(self):
         self.ds.logger.msg = mock.MagicMock()
@@ -316,7 +311,7 @@ class TestDataStoreWithMockToolbox(unittest.TestCase):
         self.ds.rename(expected_name, "")  # Do rename
         # Check name
         self.assertEqual(expected_name, self.ds.name)  # item name
-        self.assertEqual(expected_name, self.ds.get_icon().name_item.text())  # name item on Design View
+        self.assertEqual(expected_name, self.ds.get_icon().name())  # name item on Design View
         # Check data_dir and logs_dir
         self.assertEqual(expected_data_dir, self.ds.data_dir)  # Check data dir
         # Check that the database path in properties has been updated
