@@ -57,9 +57,9 @@ class DataConnection(ProjectItem):
             x (float): Initial X coordinate of item icon
             y (float): Initial Y coordinate of item icon
             toolbox (ToolboxUI): QMainWindow instance
-            project (SpineToolboxProject): the project this item belongs to
-            file_references (list, optional): a list of file paths
-            db_references (list of dict, optional): a list of db urls
+            project (SpineToolboxProject): The project this item belongs to
+            file_references (list, optional): List of file paths
+            db_references (list of dict, optional): List of db urls
         """
         super().__init__(name, description, x, y, project)
         if file_references is None:
